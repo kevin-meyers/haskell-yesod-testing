@@ -11,26 +11,26 @@ import Lib
 import Yesod
 import Text.Hamlet (hamlet, HtmlUrl)
 import Text.Blaze.Html.Renderer.String (renderHtml)
-import Data.Text (Text)
+import Data.Text (Text, append, pack)
+import Control.Arrow (second)
+import Network.HTTP.Types (renderQueryText)
+import Data.Text.Encoding (decodeUtf8)
+import Blaze.ByteString.Builder (toByteString)
 
 
-data MyRoute = Home
+data MyRoute = SomePage
 
 render :: MyRoute -> [(Text, Text)] -> Text
-render Home _ = "/home"
-
-footer :: HtmlUrl MyRoute
-footer = [hamlet|
-<footer>
-    Return to #
-    <a href=@{Home}>Homepage
-    .
-|]
+render SomePage params = "/home" `append` 
+    decodeUtf8 (toByteString $ renderQueryText True $ map (second Just) params)
 
 main :: IO ()
-main = putStrLn $ renderHtml $ [hamlet|
-<body>
-    <p>This is my page.
-    ^{footer}
+main = do
+    let currPage = 2 :: Int
+    putStrLn $ renderHtml $ [hamlet|
+<p>
+    You are currently on page #{currPage}.
+    <a href=@?{(SomePage, [("page", pack $ show $ currPage - 1)])}>Previous
+    <a href=@?{(SomePage, [("page", pack $ show $ currPage + 1)])}>Next
 |] render
-
+    
