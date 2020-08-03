@@ -3,36 +3,37 @@
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeFamilies          #-}
 import           Yesod
-import Data.Time (getCurrentTime)
 
 data App = App
 
 mkYesod "App" [parseRoutes|
 / HomeR GET
+/error ErrorR GET
+/not-found NotFoundR GET
 |]
 
 instance Yesod App where
-    defaultLayout contents = do
-        PageContent title headTags bodyTags <- widgetToPageContent contents
-        mmsg <- getMessage
-        withUrlRenderer [hamlet|
-            $doctype 5
-
-            <html>
-                <head>
-                    <title>#{title}
-                    ^{headTags}
-                <body>
-                    $maybe msg <- mmsg
-                        <div #message>#{msg}
-                    ^{bodyTags}
-        |]
+    errorHandler NotFound = fmap toTypedContent $ defaultLayout $ do
+        setTitle "Request page not located"
+        toWidget [hamlet|
+<h1>Not Found
+<p>We apologize for the inconvenience, but the requested page could not be located.
+|]
+    errorHandler other = defaultErrorHandler other
 
 getHomeR :: Handler Html
-getHomeR = do
-    now <- liftIO getCurrentTime
-    setMessage $ toHtml $ "You previously visited at: " ++ show now
-    defaultLayout [whamlet|<p>Try refreshing|]
+getHomeR = defaultLayout
+    [whamlet|
+        <p>
+            <a href=@{ErrorR}>Internal server error
+            <a href=@{NotFoundR}>Not found
+    |]
+
+getErrorR :: Handler ()
+getErrorR = error "This is an error"
+
+getNotFoundR :: Handler ()
+getNotFoundR = notFound
 
 main :: IO ()
 main = warp 3000 App
