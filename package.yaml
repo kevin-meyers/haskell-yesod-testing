@@ -24,6 +24,7 @@ dependencies:
 - yesod
 - shakespeare
 - blaze-html
+- text
 
 library:
   source-dirs: src

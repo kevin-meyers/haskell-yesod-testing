@@ -1,5 +1,6 @@
 {-# LANGUAGE ExtendedDefaultRules #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -8,25 +9,28 @@ module Main where
 import Lib
 
 import Yesod
-import Text.Hamlet (shamlet)
+import Text.Hamlet (hamlet, HtmlUrl)
 import Text.Blaze.Html.Renderer.String (renderHtml)
-import Data.Char (toLower)
-import Data.List (sort)
+import Data.Text (Text)
 
 
-data Person = Person
-    { name :: String
-    , age :: Int
-    }
+data MyRoute = Home
+
+render :: MyRoute -> [(Text, Text)] -> Text
+render Home _ = "/home"
+
+footer :: HtmlUrl MyRoute
+footer = [hamlet|
+<footer>
+    Return to #
+    <a href=@{Home}>Homepage
+    .
+|]
 
 main :: IO ()
-main = putStrLn $ renderHtml [shamlet|
-    <p>Hello, my name is #{name person} and I am #{show $ age person}.
-    <p>
-        Let's do some stuff with my name: #
-        <b>#{sort $ map toLower (name person)}
-    <p>Oh, and in 5 years I'll be #{show $(+) 5 $ age person} years old.
-    |]
-  where
-      person = Person "Kevin" 21
+main = putStrLn $ renderHtml $ [hamlet|
+<body>
+    <p>This is my page.
+    ^{footer}
+|] render
 

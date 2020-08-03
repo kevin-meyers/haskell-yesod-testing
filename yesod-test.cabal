@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a075e11395f518ffe5db1c5fa904b80476f0a925859eb0ede8447114476a78bb
+-- hash: 3be9b66e0b3840d774df939a5ed074c14e72bf95af2f2cce46569bb9c94f102c
 
 name:           yesod-test
 version:        0.1.0.0
@@ -36,6 +36,7 @@ library
       base >=4.7 && <5
     , blaze-html
     , shakespeare
+    , text
     , yesod
   default-language: Haskell2010
 
@@ -50,6 +51,7 @@ executable yesod-test-exe
       base >=4.7 && <5
     , blaze-html
     , shakespeare
+    , text
     , yesod
     , yesod-test
   default-language: Haskell2010
@@ -66,6 +68,7 @@ test-suite yesod-test-test
       base >=4.7 && <5
     , blaze-html
     , shakespeare
+    , text
     , yesod
     , yesod-test
   default-language: Haskell2010
