@@ -27,6 +27,7 @@ dependencies:
 - text
 - blaze-builder
 - http-types
+- time
 
 library:
   source-dirs: src
