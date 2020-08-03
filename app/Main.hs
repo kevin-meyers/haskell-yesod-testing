@@ -18,19 +18,23 @@ import Data.Text.Encoding (decodeUtf8)
 import Blaze.ByteString.Builder (toByteString)
 
 
-data MyRoute = SomePage
+data MyRoute = Home | Time | Stylesheet
 
 render :: MyRoute -> [(Text, Text)] -> Text
-render SomePage params = "/home" `append` 
-    decodeUtf8 (toByteString $ renderQueryText True $ map (second Just) params)
+render Home _ = "/home"
+render Time _ = "/time"
+render Stylesheet _ = "/style.css"
+
+template :: Text -> HtmlUrl MyRoute
+template title = [hamlet|
+$doctype 5
+<html>
+    <head>
+        <title>#{title}
+        <link rel=stylesheet href=@{Stylesheet}>
+        <body>
+            <h1>#{title}
+|]
 
 main :: IO ()
-main = do
-    let currPage = 2 :: Int
-    putStrLn $ renderHtml $ [hamlet|
-<p>
-    You are currently on page #{currPage}.
-    <a href=@?{(SomePage, [("page", pack $ show $ currPage - 1)])}>Previous
-    <a href=@?{(SomePage, [("page", pack $ show $ currPage + 1)])}>Next
-|] render
-    
+main = putStrLn $ renderHtml $ template "My Title" render
