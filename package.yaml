@@ -28,6 +28,7 @@ dependencies:
 - blaze-builder
 - http-types
 - time
+- yesod-form
 
 library:
   source-dirs: src
