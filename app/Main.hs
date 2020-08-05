@@ -62,8 +62,8 @@ personForm :: Html -> MForm Handler (FormResult Person, Widget)
 personForm = renderDivs $ Person
     <$> areq textField "Name" Nothing
     <*> areq (jqueryDayField def
-        { jdsChangeYear = True -- give a year dropdown
-        , jdsYearRange = "1900:-5" -- 1900 till five years ago
+        { jdsChangeYear = True 
+        , jdsYearRange = "1900:-5"
         }) "Birthday" Nothing
     <*> aopt textField "Favorite color" Nothing
     <*> areq emailField "Email address" Nothing
