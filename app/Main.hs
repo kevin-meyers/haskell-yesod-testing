@@ -2,30 +2,39 @@
 {-# LANGUAGE QuasiQuotes       #-}
 {-# LANGUAGE TemplateHaskell   #-}
 {-# LANGUAGE TypeFamilies      #-}
-{-# LANGUAGE ViewPatterns      #-}
-import           Data.Text (Text)
-import qualified Data.Text as T
+import           Control.Exception (IOException, try)
+import           Control.Monad     (when)
 import           Yesod
 
 data App = App
-instance Yesod App
+instance Yesod App where
+    -- This function controls which messages are logged
+    shouldLogIO App src level =
+        return True -- good for development
+        -- level == LevelWarn || level == LevelError -- good for production
 
 mkYesod "App" [parseRoutes|
-/person/#Text PersonR GET
-/year/#Integer/month/#Text/day/#Int DateR
-/wiki/*Texts WikiR GET
+/ HomeR GET
 |]
 
-getPersonR :: Text -> Handler Html
-getPersonR name = defaultLayout [whamlet|<h1>Hello #{name}!|]
-
-handleDateR :: Integer -> Text -> Int -> Handler Text -- text/plain
-handleDateR year month day =
-    return $
-        T.concat [month, " ", T.pack $ show day, ", ", T.pack $ show year]
-
-getWikiR :: [Text] -> Handler Text
-getWikiR = return . T.unwords
+getHomeR :: Handler Html
+getHomeR = do
+    $logDebug "Trying to read data file"
+    edata <- liftIO $ try $ readFile "datafile.txt"
+    case edata :: Either IOException String of
+        Left e -> do
+            $logError "Could not read datafile.txt"
+            defaultLayout [whamlet|An error occurred|]
+        Right str -> do
+            $logInfo "Reading of data file succeeded"
+            let ls = lines str
+            when (length ls < 5) $ $logWarn "Less than 5 lines of data"
+            defaultLayout
+                [whamlet|
+                    <ol>
+                        $forall l <- ls
+                            <li>#{l}
+                |]
 
 main :: IO ()
 main = warp 3000 App
