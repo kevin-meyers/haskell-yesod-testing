@@ -1,39 +1,31 @@
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE QuasiQuotes           #-}
-{-# LANGUAGE TemplateHaskell       #-}
-{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes       #-}
+{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE TypeFamilies      #-}
+{-# LANGUAGE ViewPatterns      #-}
+import           Data.Text (Text)
+import qualified Data.Text as T
 import           Yesod
 
 data App = App
+instance Yesod App
 
 mkYesod "App" [parseRoutes|
-/ HomeR GET
-/error ErrorR GET
-/not-found NotFoundR GET
+/person/#Text PersonR GET
+/year/#Integer/month/#Text/day/#Int DateR
+/wiki/*Texts WikiR GET
 |]
 
-instance Yesod App where
-    errorHandler NotFound = fmap toTypedContent $ defaultLayout $ do
-        setTitle "Request page not located"
-        toWidget [hamlet|
-<h1>Not Found
-<p>We apologize for the inconvenience, but the requested page could not be located.
-|]
-    errorHandler other = defaultErrorHandler other
+getPersonR :: Text -> Handler Html
+getPersonR name = defaultLayout [whamlet|<h1>Hello #{name}!|]
 
-getHomeR :: Handler Html
-getHomeR = defaultLayout
-    [whamlet|
-        <p>
-            <a href=@{ErrorR}>Internal server error
-            <a href=@{NotFoundR}>Not found
-    |]
+handleDateR :: Integer -> Text -> Int -> Handler Text -- text/plain
+handleDateR year month day =
+    return $
+        T.concat [month, " ", T.pack $ show day, ", ", T.pack $ show year]
 
-getErrorR :: Handler ()
-getErrorR = error "This is an error"
-
-getNotFoundR :: Handler ()
-getNotFoundR = notFound
+getWikiR :: [Text] -> Handler Text
+getWikiR = return . T.unwords
 
 main :: IO ()
 main = warp 3000 App
