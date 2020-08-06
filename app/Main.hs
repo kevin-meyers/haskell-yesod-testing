@@ -5,12 +5,17 @@
 {-# LANGUAGE TypeFamilies          #-}
 import           Control.Applicative
 import           Data.Text           (Text)
+import           Data.Time
 import           Yesod
+
+-- In the authentication chapter, we'll address this properly
+newtype UserId = UserId Int
+    deriving Show
 
 data App = App
 
 mkYesod "App" [parseRoutes|
-/ HomeR GET
+/ HomeR GET POST
 |]
 
 instance Yesod App
@@ -18,34 +23,42 @@ instance Yesod App
 instance RenderMessage App FormMessage where
     renderMessage _ _ = defaultFormMessage
 
-passwordConfirmField :: Field Handler Text
-passwordConfirmField = Field
-    { fieldParse = \rawVals _fileVals ->
-        case rawVals of
-            [a, b]
-                | a == b -> return $ Right $ Just a
-                | otherwise -> return $ Left "Passwords don't match"
-            [] -> return $ Right Nothing
-            _ -> return $ Left "You must enter two values"
-    , fieldView = \idAttr nameAttr otherAttrs eResult isReq ->
-        [whamlet|
-            <input id=#{idAttr} name=#{nameAttr} *{otherAttrs} type=password>
-            <div>Confirm:
-            <input id=#{idAttr}-confirm name=#{nameAttr} *{otherAttrs} type=password>
-        |]
-    , fieldEnctype = UrlEncoded
+type Form a = Html -> MForm Handler (FormResult a, Widget)
+
+data Blog = Blog
+    { blogTitle    :: Text
+    , blogContents :: Textarea
+    , blogUser     :: UserId
+    , blogPosted   :: UTCTime
     }
+    deriving Show
+
+form :: UserId -> Form Blog
+form userId = renderDivs $ Blog
+    <$> areq textField "Title" Nothing
+    <*> areq textareaField "Contents" Nothing
+    <*> pure userId
+    <*> lift (liftIO getCurrentTime)
 
 getHomeR :: Handler Html
 getHomeR = do
-    ((res, widget), enctype) <- runFormGet $ renderDivs
-        $ areq passwordConfirmField "Password" Nothing
+    let userId = UserId 5 -- again, see the authentication chapter
+    ((res, widget), enctype) <- runFormPost $ form userId
     defaultLayout
         [whamlet|
-            <p>Result: #{show res}
-            <form enctype=#{enctype}>
+            <form method=post action=@{HomeR} enctype=#{enctype}>
                 ^{widget}
-                <input type=submit value="Change password">
+                <input type=submit>
+        |]
+
+postHomeR :: Handler Html
+postHomeR = do
+    let userId = UserId 5
+    ((res, widget), enctype) <- runFormPost $ form userId
+    defaultLayout 
+        [whamlet|
+            <p>Previous result: #{show res}
+            <a href=@{HomeR}>Go back
         |]
 
 main :: IO ()
