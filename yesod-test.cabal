@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 4438d4b51ebe6c344742323422da4a4536b89d43f91d73dbcff11b4ec218b61e
+-- hash: 0304456c99af252d043cbfcd6dc8d1dcca6c6ebac9983a475bad78cf9acce84b
 
 name:           yesod-test
 version:        0.1.0.0
@@ -36,6 +36,7 @@ library
       base >=4.7 && <5
     , blaze-builder
     , blaze-html
+    , clientsession
     , http-types
     , shakespeare
     , text
@@ -55,6 +56,7 @@ executable yesod-test-exe
       base >=4.7 && <5
     , blaze-builder
     , blaze-html
+    , clientsession
     , http-types
     , shakespeare
     , text
@@ -76,6 +78,7 @@ test-suite yesod-test-test
       base >=4.7 && <5
     , blaze-builder
     , blaze-html
+    , clientsession
     , http-types
     , shakespeare
     , text

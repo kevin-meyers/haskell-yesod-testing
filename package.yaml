@@ -29,6 +29,7 @@ dependencies:
 - http-types
 - time
 - yesod-form
+- clientsession
 
 library:
   source-dirs: src
