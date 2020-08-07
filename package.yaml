@@ -30,6 +30,11 @@ dependencies:
 - time
 - yesod-form
 - clientsession
+- persistent
+- persistent-template
+- persistent-sqlite
+- resourcet
+- monad-logger
 
 library:
   source-dirs: src

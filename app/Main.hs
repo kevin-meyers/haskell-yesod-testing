@@ -1,67 +1,80 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE QuasiQuotes           #-}
-{-# LANGUAGE TemplateHaskell       #-}
-{-# LANGUAGE TypeFamilies          #-}
-import           Yesod
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE EmptyDataDecls             #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE GADTs                      #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE QuasiQuotes                #-}
+{-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE ViewPatterns               #-}
+import Yesod
+import Database.Persist.Sqlite
+import Control.Monad.Trans.Resource (runResourceT)
+import Control.Monad.Logger (runStderrLoggingT)
 
-data App = App
-
-mkYesod "App" [parseRoutes|
-/         HomeR     GET
-/setname  SetNameR  GET POST
-/sayhello SayHelloR GET
+-- Define our entities as usual
+share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
+Person
+    firstName String
+    lastName String
+    age Int
+    deriving Show
 |]
 
-instance Yesod App
+-- We keep our connection pool in the foundation. At program initialization, we
+-- create our initial pool, and each time we need to perform an action we check
+-- out a single connection from the pool.
+data PersistTest = PersistTest ConnectionPool
 
-instance RenderMessage App FormMessage where
-    renderMessage _ _ = defaultFormMessage
+-- We'll create a single route, to access a person. It's a very common
+-- occurrence to use an Id type in routes.
+mkYesod "PersistTest" [parseRoutes|
+/ HomeR GET
+/person/#PersonId PersonR GET
+|]
 
+-- Nothing special here
+instance Yesod PersistTest
+
+-- Now we need to define a YesodPersist instance, which will keep track of
+-- which backend we're using and how to run an action.
+instance YesodPersist PersistTest where
+    type YesodPersistBackend PersistTest = SqlBackend
+
+    runDB action = do
+        PersistTest pool <- getYesod
+        runSqlPool action pool
+
+-- List all people in the database
 getHomeR :: Handler Html
-getHomeR = defaultLayout
-    [whamlet|
-        <p>
-            <a href=@{SetNameR}>Set your name
-        <p>
-            <a href=@{SayHelloR}>Say hello
-    |]
+getHomeR = do
+    people <- runDB $ selectList [] [Asc PersonAge]
+    defaultLayout
+        [whamlet|
+            <ul>
+                $forall Entity personid person <- people
+                    <li>
+                        <a href=@{PersonR personid}>#{personFirstName person}
+        |]
 
--- Display the set name form
-getSetNameR :: Handler Html
-getSetNameR = defaultLayout
-    [whamlet|
-        <form method=post>
-            My name is #
-            <input type=text name=name>
-            . #
-            <input type=submit value="Set name">
-    |]
+-- We'll just return the show value of a person, or a 404 if the Person doesn't
+-- exist.
+getPersonR :: PersonId -> Handler String
+getPersonR personId = do
+    person <- runDB $ get404 personId
+    return $ show person
 
--- Retrieve the submitted name from the user
-postSetNameR :: Handler ()
-postSetNameR = do
-    -- Get the submitted name and set it in the session
-    name <- runInputPost $ ireq textField "name"
-    setSession "name" name
-
-    -- After we get a name, redirect to the ultimate destination.
-    -- If no destination is set, default to the homepage
-    redirectUltDest HomeR
-
-getSayHelloR :: Handler Html
-getSayHelloR = do
-    -- Lookup the name value set in the session
-    mname <- lookupSession "name"
-    case mname of
-        Nothing -> do
-            -- No name in the session, set the current page as
-            -- the ultimate destination and redirect to the
-            -- SetName page
-            setUltDestCurrent
-            setMessage "Please tell me your name"
-            redirect SetNameR
-        Just name -> defaultLayout [whamlet|<p>Welcome #{name}|]
+openConnectionCount :: Int
+openConnectionCount = 10
 
 main :: IO ()
-main = warp 3000 App
+main = runStderrLoggingT $ withSqlitePool "test.db3" openConnectionCount $ \pool -> liftIO $ do
+    runResourceT $ flip runSqlPool pool $ do
+        runMigration migrateAll
+        insert $ Person "Michael" "Snoyman" 26
+        insert $ Person "Kevin" "Meyers" 21
+    warp 3000 $ PersistTest pool

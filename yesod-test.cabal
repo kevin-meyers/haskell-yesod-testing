@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0304456c99af252d043cbfcd6dc8d1dcca6c6ebac9983a475bad78cf9acce84b
+-- hash: d4c1f3ffe257833cf6ac04bde48a6f99679f472e1e493258d268ff516a902d84
 
 name:           yesod-test
 version:        0.1.0.0
@@ -38,6 +38,11 @@ library
     , blaze-html
     , clientsession
     , http-types
+    , monad-logger
+    , persistent
+    , persistent-sqlite
+    , persistent-template
+    , resourcet
     , shakespeare
     , text
     , time
@@ -58,6 +63,11 @@ executable yesod-test-exe
     , blaze-html
     , clientsession
     , http-types
+    , monad-logger
+    , persistent
+    , persistent-sqlite
+    , persistent-template
+    , resourcet
     , shakespeare
     , text
     , time
@@ -80,6 +90,11 @@ test-suite yesod-test-test
     , blaze-html
     , clientsession
     , http-types
+    , monad-logger
+    , persistent
+    , persistent-sqlite
+    , persistent-template
+    , resourcet
     , shakespeare
     , text
     , time
